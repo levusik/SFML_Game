@@ -2,11 +2,13 @@
 
 player::player()
 {
-	movementSpeed = 6.f;
+	movementSpeed = 8.f;
+	texture.loadFromFile("Ship.png");
+	sprite.setTexture(texture);
 	position = sf::Vector2f(LINE, WINDOWHEIGHT / 2);
 	rect.setFillColor(sf::Color::Green);
     rect.setPosition(sf::Vector2f(position));
-	rect.setSize(sf::Vector2f(50,50));
+	rect.setSize(sf::Vector2f(94,84));
 }
 sf::RectangleShape player::getShape()
 {
@@ -27,6 +29,7 @@ sf::FloatRect player::getPosition()
 void player::update()
 {
 	rect.setPosition(position);
+	sprite.setPosition(rect.getPosition());
 }
 void player::updateMovement()
 {

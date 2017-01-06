@@ -21,6 +21,7 @@ public:
 	void updateMovement();
 
 private:	
+	sf::Texture texture;
 	sf::RectangleShape rect;
 	sf::Sprite sprite;
 	sf::Vector2f position;
