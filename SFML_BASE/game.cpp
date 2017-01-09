@@ -4,17 +4,31 @@
 
 game::game()
 {
+	DelayBetweenEnemies = sf::seconds(4.f);
 	//konfiguracja okienka
 	sf::ContextSettings settings;
-	settings.antialiasingLevel = 8;
+	settings.antialiasingLevel = 0;
     window.create(sf::VideoMode(WINDOWWIDTH,WINDOWHEIGHT),"NAZWA APPKI",sf::Style::Default,settings);
 	window.setFramerateLimit(30);
 	//ustawienie stanu pocz¹tkowego (w domyœle jest to MENU ale narazie PLAY bo PLAY jest trudniejsze do oprogramowania)
-	StatusOfMachine = MENU;
+	Cash = 1000;
+	StatusOfMachine = SHOP;
 	if (!font.loadFromFile("font.ttf") && DEBUG == 1)
 		std::cout << "Problem z czcionk¹ \n";
-	text.setCharacterSize(30);
+	text.setCharacterSize(25);
 	text.setFont(font);
+
+	int x = 0;
+	for (int i = 0; i < 4; ++i)
+		Bullets.push_back(x);
+	Bullets[0] = 100;
+	for (int i = 1; i < Bullets.size(); ++i)
+	{
+		Bullets[i] = 0;
+	}
+	PermissionToWeapon[0] = 1;
+	for (int i = 1; i < 3; ++i)
+		PermissionToWeapon[i] = 0;
 }
 void game::run()
 {
@@ -47,21 +61,32 @@ void game::StateMachine()
 }
 void game::StatePLAY()
 {
+	//LINIA
+	sf::RectangleShape Line;
+	Line.setFillColor(sf::Color::Red);
+	Line.setSize(sf::Vector2f(5,WINDOWHEIGHT));
+	Line.setPosition(sf::Vector2f(LINE,40));
+	
+	//HUD
+	sf::RectangleShape HudLine;
+	HudLine.setFillColor(sf::Color::Red);
+	HudLine.setSize(sf::Vector2f(WINDOWWIDTH,5));
+	HudLine.setPosition(sf::Vector2f(0,40));
+
 	//dekleracje zmiennych 
+
+	//LICZNIKI
 	int counter, counter1, counter2;
-	enum CurrentWeapon{PISTOL = 0,MACHINEGUN = 1,ASSAULTRIFLE = 2, SNIPER = 3};
 	counter = counter1 = counter2 = 0;
 
-	// zmienne do fal
+	//FALE
 	bool waveLock = false;
 	int numberOfEnemies, typeOfWave;
 	sf::Clock timeWave;
 	
-	
-	int bulletsLeft;
+	//BROÑ
 	CurrentWeapon WhichWeapon;
 	 typeOfWave = 0;
-	bulletsLeft = 999;
 	WhichWeapon = PISTOL;
 	sf::Time currentFireSpeed;
 
@@ -90,8 +115,12 @@ void game::StatePLAY()
 	// g³ówna pêtla stanu GRA 
 	while (StatusOfMachine == PLAY)
 	{
+		//ZMIANA FAL
 		if (waveLock == false)
 		{
+			std::cout << AverageEnemyPercent << "\n" << FastEnemyPercent << "\n" << HeavyEnemyPercent << "\n" << BossEnemyPercent << "\n";
+
+
 			//czyszczenie planszy 
 			while (ProjectileArray.size())
 			{
@@ -110,12 +139,6 @@ void game::StatePLAY()
 				}
 			}
 
-			// typy fal : 
-			
-			// fala bosa ? 
-			// czasówka
-			// zwyk³a 
-
 			Wave++;
 			//  wielokrotnoœci 4 to czasówki
 			if (Wave % 4 == 0)
@@ -127,42 +150,54 @@ void game::StatePLAY()
 			{
 				typeOfWave = 0;
 				numberOfEnemies = 20 + Wave;
-				modifyEnemyPercents(80, 8, 8, 4);
-
-				//jakiœ sprytny wzór na przeciwników
-				//  ..
-				//  ..
-				//  ..
+			}
+			if (AverageEnemyPercent > 0)
+			{
+				AverageEnemyPercent -= 2;
+				FastEnemyPercent++;
+				HeavyEnemyPercent++;
+			}
+			if (Wave % 4 == 0)
+			{
+				AverageEnemyPercent--;
+				BossEnemyPercent++;
 			}
 			waveLock = true;
+			if (DelayBetweenEnemies > sf::seconds(1.5f))
+			{
+				DelayBetweenEnemies -= sf::seconds(0.125f);
+				std::cout << DelayBetweenEnemies.asSeconds() << "\n";
+			}
 		}
-
+		
+		//EVENTY 
 		sf::Event event;
 		while (window.pollEvent(event))
 		{
 			if (event.type == sf::Event::Closed || sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
 				StatusOfMachine = END;
 		}
-		//zmiania broni 
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num1))
+
+		//ZMIANA BRONI 
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num1) && PermissionToWeapon[0])
 		{
 			WhichWeapon = PISTOL;
 			Projectile.setupProjectile(0);
 			currentFireSpeed = Projectile.getFirespeed();
 		}
-		else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num2))
+		else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num2)&& PermissionToWeapon[1])
 		{
 			WhichWeapon = MACHINEGUN;
 			Projectile.setupProjectile(1);
 			currentFireSpeed = Projectile.getFirespeed();
 		}
-		else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num3))
+		else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num3) && PermissionToWeapon[2])
 		{
 			WhichWeapon = ASSAULTRIFLE;
 			Projectile.setupProjectile(2);
 			currentFireSpeed = Projectile.getFirespeed();
 		}
-		else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num4))
+		else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num4) && PermissionToWeapon[3])
 		{
 			WhichWeapon = SNIPER;
 			Projectile.setupProjectile(3);
@@ -179,7 +214,7 @@ void game::StatePLAY()
 
 		//dodajemy pocisk
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space) && delayBetweenSpawningProjectiles.getElapsedTime()
-			>= currentFireSpeed && bulletsLeft > 0)
+			>= currentFireSpeed  && Bullets[WhichWeapon] > 0 )
 		{
 			Projectile.setupPosition( sf::Vector2f(Player.getShape().getPosition().x + (Player.getShape().getGlobalBounds().width /2),
 									Player.getShape().getPosition().y + (Player.getShape().getGlobalBounds().height/2) ));
@@ -187,11 +222,11 @@ void game::StatePLAY()
 
 			ProjectileArray.push_back(Projectile);
 			delayBetweenSpawningProjectiles.restart();
-			bulletsLeft--;
+			Bullets[WhichWeapon]--;
 		}
 
 		// po jakimœ czasie dodajemy kolejnego przeciwnika 
-		if (EnemySpawnClock.getElapsedTime() >= sf::seconds(2.f))
+		if (EnemySpawnClock.getElapsedTime() >= DelayBetweenEnemies)
 		{
 			Enemy.setupEnemy(randomEnemy() );
 			enemyArray.push_back(Enemy);
@@ -291,7 +326,7 @@ void game::StatePLAY()
 
 		std::stringstream stringStream;
 		if (typeOfWave != 1)
-		stringStream<<"  Fala : " << Wave <<"| Pozostalo : "<< numberOfEnemies << " | Broñ : " << WhichWeapon << " | Amunicja : " << bulletsLeft << " | Kasa : " << Cash;
+		stringStream<<"  Fala : " << Wave <<"| Pozostalo : "<< numberOfEnemies << " | Broñ : " << WhichWeapon << " | Amunicja : " << Bullets[WhichWeapon] << " | Kasa : " << Cash;
 		text.setString(stringStream.str());
 		window.draw(text);
 
@@ -302,6 +337,10 @@ void game::StatePLAY()
 		if (DEBUG == 1)
 		window.draw(Player.getShape());   // <- kwadrat
 		window.draw(Player.getSprite());	 // <- grafika
+
+		//Hud i linia 
+		window.draw(Line);
+		window.draw(HudLine);
 
 		//wyœwietlanie rzeczy
 		window.display();
@@ -399,15 +438,37 @@ void game::stateMENU()
 }
 void game::stateSHOP()
 {
+	bool lock = 0;
+	sf::Clock DelayBeteewenBuying;
 	const int howManyButtons = 4;
+
+
 	sf::RectangleShape BuyWeapon[howManyButtons];
 	sf::RectangleShape BuyAmmo[howManyButtons];
 	sf::RectangleShape Play;
-	sf::Text text;
+	sf::Text text, Signs[8], cashSign, Terminal, exit;
+	sf::String SignsString[8] = { "broñ1","broñ2" ,"broñ3" ,"broñ4","ammo1","ammo2","ammo3","ammo4"};
+
+	for (int i = 0; i < 8; ++i)
+	{
+		Signs[i].setFont(font);
+		Signs[i].setCharacterSize(20);
+		Signs[i].setString(SignsString[i]);
+	}
+
+	cashSign.setFont(font);
+	cashSign.setCharacterSize(30);
+	cashSign.setPosition(sf::Vector2f(0, 0));
+
 	text.setFont(font);
 	text.setCharacterSize(50);
 	text.setString("SKLEP");
 	text.setPosition(sf::Vector2f(((WINDOWWIDTH - text.getGlobalBounds().width) / 2), 0));
+
+	exit.setFont(font);
+	exit.setCharacterSize(25);
+	exit.setPosition(sf::Vector2f(WINDOWWIDTH-162,WINDOWHEIGHT-230));
+	exit.setString("Powrót");
 
 	Play.setSize(sf::Vector2f(100, 100));
 	Play.setFillColor(sf::Color::Green);
@@ -415,20 +476,24 @@ void game::stateSHOP()
 
 	for (int i = 0; i < 4; ++i)
 	{
-		BuyWeapon[i].setSize(sf::Vector2f(50, 50));
+		Signs[i].setPosition(sf::Vector2f(WINDOWWIDTH / (howManyButtons + 2) *(i + 1), WINDOWHEIGHT /3 - 30 ));
+		BuyWeapon[i].setSize(sf::Vector2f(80, 50));
 		BuyWeapon[i].setFillColor(sf::Color::Color((i+1) * 50, 0, 0));
 		BuyWeapon[i].setPosition(sf::Vector2f(WINDOWWIDTH/(howManyButtons+2) *(i+1)  ,WINDOWHEIGHT/3));
 
-		BuyAmmo[i].setSize(sf::Vector2f(50, 25));
+		Signs[i+4].setPosition(sf::Vector2f(WINDOWWIDTH / (howManyButtons + 2) *(i + 1),
+			WINDOWHEIGHT / 3 + BuyWeapon[i].getGlobalBounds().height + 15));
+
+		BuyAmmo[i].setSize(sf::Vector2f(80, 25));
 		BuyAmmo[i].setFillColor(sf::Color::Color((i+1) * 50, 0, 0));
 		BuyAmmo[i].setPosition(sf::Vector2f(WINDOWWIDTH / (howManyButtons + 2) *(i + 1),
-			WINDOWHEIGHT / 3 + BuyWeapon[i].getGlobalBounds().height + 25 ));
+			WINDOWHEIGHT / 3 + BuyWeapon[i].getGlobalBounds().height + 40 ));
 	}
 	//zakup amunicji, broni oraz ulepszeñ
+	DelayBeteewenBuying.restart();
 	while (StatusOfMachine == SHOP)
 	{
-
-
+		lock = 0;
 		sf::Event event;
 		while (window.pollEvent(event))
 		{
@@ -450,17 +515,40 @@ void game::stateSHOP()
 
 		for (int i = 0; i < 4; ++i)
 		{
-			if (intersectWithMouse(BuyWeapon[i].getGlobalBounds()))
+			if (intersectWithMouse(BuyWeapon[i].getGlobalBounds()) &&
+				DelayBeteewenBuying.getElapsedTime() > sf::seconds(0.25f) && !PermissionToWeapon[i]
+				&& Cash >= 100)
 			{
-				std::cout << "ZAKUP BRONI "<<i<<" \n";
+				std::cout << "Zakup Broni " << i<<"\n";
+					Cash -= 100;
+				PermissionToWeapon[i] = 1;
+				Bullets[i] = 50;
 			}
-			if (intersectWithMouse(BuyAmmo[i].getGlobalBounds()))
+			if (intersectWithMouse(BuyAmmo[i].getGlobalBounds()) && 
+				DelayBeteewenBuying.getElapsedTime() > sf::seconds(0.25f) && PermissionToWeapon[i])
 			{
-				std::cout << "ZAKUP AMUNICJI DO BRONI " << i << "\n";
+				if ( Cash >= 20 && lock == 0)
+				{
+				//	if (DEBUG == 1)
+					std::cout << "Zakup Amunicji do broni " << i << "\n";
+					Bullets[i] += addBullets(i);
+					Cash -= 20;
+					DelayBeteewenBuying.restart();
+					lock = 1;
+				}
 			}
-
 		}
 
+		std::stringstream cashstring;
+		cashstring << "Kasa : " << Cash;
+		cashSign.setString(cashstring.str());
+
+		window.draw(cashSign);
+		for (int i = 0; i < 8; ++i)
+		{
+			window.draw(Signs[i]);
+		}
+		window.draw(exit);
 		window.draw(text);
 		window.draw(Play);
 		window.display();
@@ -530,4 +618,15 @@ bool game::intersectWithMouse( sf::FloatRect objectPos)
 		sf::Mouse::isButtonPressed(sf::Mouse::Left))
 		return 1;
 	return 0;
+}
+int game::addBullets(int WhichWeapon)
+{
+	if (WhichWeapon == 0)
+		return 25;
+	else if (WhichWeapon == 1)
+		return 20;
+	else if (WhichWeapon == 2)
+		return 10;
+	else if (WhichWeapon == 3)
+		return 5;
 }

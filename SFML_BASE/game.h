@@ -32,10 +32,16 @@ private:
 	sf::Text text;
 
 	// Szansa na wylosowanie przeciwnika 
-	int AverageEnemyPercent = 80;
-	int FastEnemyPercent = 7;
-	int HeavyEnemyPercent = 8;
-	int BossEnemyPercent = 5;
+	int AverageEnemyPercent = 98;
+	int FastEnemyPercent = 1;
+	int HeavyEnemyPercent = 1;
+	int BossEnemyPercent = 0;
 	int Wave = 0;
 	int Cash = 0;
+	enum CurrentWeapon { PISTOL = 0, MACHINEGUN = 1, ASSAULTRIFLE = 2, SNIPER = 3 };
+	bool PermissionToWeapon[4];
+	sf::Time DelayBetweenEnemies;
+	std::vector <int> Bullets;
+
+	int addBullets(int WhichWeapon);
 };

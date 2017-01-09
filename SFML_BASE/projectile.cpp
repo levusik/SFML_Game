@@ -49,25 +49,25 @@ void projectile::setupProjectile(int IDOfProjectile)
 	rect.setPosition(position);
 	switch (IDOfProjectile)
 	{
-		//zwyk³y pocisk od pistoletu
+		//zwykï¿½y pocisk od pistoletu
 	case 0:
 		movement = 7.5f;
-		damage = 1;
-		rect.setSize(sf::Vector2f(10,10));
+		damage = 2;
+		rect.setSize(sf::Vector2f(20,5));
 		rect.setFillColor(sf::Color::Color(100,100,100));
 		fireSpeed = sf::seconds(0.75f);
 		break;
 	case 1: //pistolet maszynowy
 		movement = 12.5f;
-		damage = 2;
-		rect.setSize(sf::Vector2f(10, 10));
+		damage = 1;
+		rect.setSize(sf::Vector2f(20, 5));
 		rect.setFillColor(sf::Color::Color(200,50,50));
 		fireSpeed = sf::seconds(0.1f);
 		break;
 	case 2: //karabin szturmowy
 		movement = 10.f;
 		damage = 3;
-		rect.setSize(sf::Vector2f(13,13));
+		rect.setSize(sf::Vector2f(20,5));
 		rect.setFillColor(sf::Color::Color(125,125,125));
 		fireSpeed = sf::seconds(0.25f);
 		break;

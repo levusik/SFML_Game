@@ -34,7 +34,7 @@ void player::update()
 void player::updateMovement()
 {
 	if ((sf::Keyboard::isKeyPressed(sf::Keyboard::W) || sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-		&& rect.getGlobalBounds().top > 0)
+		&& rect.getGlobalBounds().top > 40)
 	{
 		position.y -= movementSpeed;
 	}
