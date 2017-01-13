@@ -78,7 +78,7 @@ void enemy::update()
 	rect.setPosition(position);
 	sprite.setPosition(rect.getPosition() );
 }
-void enemy::Hitted(int minusHP)
+void enemy::Hitted(float minusHP)
 {
 	hp -= minusHP;
 	if (hp <= maxHp / 2 && slowed == false)
@@ -95,4 +95,12 @@ int enemy::getHP()
 int enemy::getType()
 {
 	return type;
+}
+void enemy::slowEnemy()
+{
+	movementSpeed *= 0.1;
+}
+void enemy::accelerateEnemy()
+{
+	movementSpeed *= 10;
 }

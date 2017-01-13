@@ -11,24 +11,50 @@ game::game()
     window.create(sf::VideoMode(WINDOWWIDTH,WINDOWHEIGHT),"NAZWA APPKI",sf::Style::Default,settings);
 	window.setFramerateLimit(30);
 	//ustawienie stanu pocz¹tkowego (w domyœle jest to MENU ale narazie PLAY bo PLAY jest trudniejsze do oprogramowania)
-	Cash = 1000;
-	StatusOfMachine = SHOP;
+	StatusOfMachine = MENU;
 	if (!font.loadFromFile("font.ttf") && DEBUG == 1)
 		std::cout << "Problem z czcionk¹ \n";
 	text.setCharacterSize(25);
 	text.setFont(font);
 
 	int x = 0;
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < 10; ++i)
 		Bullets.push_back(x);
-	Bullets[0] = 100;
+
+
+
 	for (int i = 1; i < Bullets.size(); ++i)
-	{
 		Bullets[i] = 0;
-	}
+
+	Bullets[0] = 100;
+	Bullets[7] = 3;
+	Bullets[8] = 3;
+	Bullets[9] = 3;
+
+
 	PermissionToWeapon[0] = 1;
+
+	//POZWOLENIE NA POWERUPY
+	PermissionToWeapon[7] = 1;
+	PermissionToWeapon[8] = 1;
+	PermissionToWeapon[9] = 1;
+
+	//POZWOLENIA NA BRONIE
 	for (int i = 1; i < 3; ++i)
+	{
 		PermissionToWeapon[i] = 0;
+	}
+
+	if (CHEAT == true)
+	{
+		for (int i = 0; i < 10; ++i)
+		{
+			PermissionToWeapon[i] = true;
+			Bullets[i] = 10000;
+		}
+		Cash = 10000;
+	}
+
 }
 void game::run()
 {
@@ -61,6 +87,7 @@ void game::StateMachine()
 }
 void game::StatePLAY()
 {
+
 	//LINIA
 	sf::RectangleShape Line;
 	Line.setFillColor(sf::Color::Red);
@@ -72,8 +99,6 @@ void game::StatePLAY()
 	HudLine.setFillColor(sf::Color::Red);
 	HudLine.setSize(sf::Vector2f(WINDOWWIDTH,5));
 	HudLine.setPosition(sf::Vector2f(0,40));
-
-	//dekleracje zmiennych 
 
 	//LICZNIKI
 	int counter, counter1, counter2;
@@ -89,6 +114,15 @@ void game::StatePLAY()
 	 typeOfWave = 0;
 	WhichWeapon = PISTOL;
 	sf::Time currentFireSpeed;
+
+	//POWERUPY
+	sf::Clock BulletsUpgradeTime;
+	sf::Clock SlowEnemiesTime;
+	sf::Clock RobotTime;
+	bool upgradeBullets = false;
+	bool slowEnemies = false;
+	bool robotOnMap = false;
+
 
 	//wektor, obiekt i iterator potrzebne do pocisków
 	std::vector <projectile> ProjectileArray;
@@ -112,6 +146,12 @@ void game::StatePLAY()
 	sf::Clock EnemySpawnClock;
 	EnemySpawnClock.restart();
 
+	//Wygodnictwo a.k.a debugging
+	sf::Clock ConsoleTime;
+	if (DEBUG == 1)
+	{
+		ConsoleTime.restart();
+	}
 	// g³ówna pêtla stanu GRA 
 	while (StatusOfMachine == PLAY)
 	{
@@ -119,7 +159,6 @@ void game::StatePLAY()
 		if (waveLock == false)
 		{
 			std::cout << AverageEnemyPercent << "\n" << FastEnemyPercent << "\n" << HeavyEnemyPercent << "\n" << BossEnemyPercent << "\n";
-
 
 			//czyszczenie planszy 
 			while (ProjectileArray.size())
@@ -178,6 +217,7 @@ void game::StatePLAY()
 				StatusOfMachine = END;
 		}
 
+
 		//ZMIANA BRONI 
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num1) && PermissionToWeapon[0])
 		{
@@ -195,6 +235,11 @@ void game::StatePLAY()
 		{
 			WhichWeapon = ASSAULTRIFLE;
 			Projectile.setupProjectile(2);
+			if (Projectile.isUpgraded() && !upgradeBullets)
+			{
+				Projectile.endOfPowerUp();
+			}
+
 			currentFireSpeed = Projectile.getFirespeed();
 		}
 		else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num4) && PermissionToWeapon[3])
@@ -202,7 +247,33 @@ void game::StatePLAY()
 			WhichWeapon = SNIPER;
 			Projectile.setupProjectile(3);
 			currentFireSpeed = Projectile.getFirespeed();
+
 		}
+		else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num5) && PermissionToWeapon[4])
+		{
+			WhichWeapon = SHOTGUN;
+			Projectile.setupProjectile(4);
+			currentFireSpeed = Projectile.getFirespeed();
+		}
+		else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num6) && PermissionToWeapon[5])
+		{
+			WhichWeapon = MINIGUN;
+			Projectile.setupProjectile(5);
+			currentFireSpeed = Projectile.getFirespeed();
+		}
+		else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num8) && PermissionToWeapon[7])
+		{
+			WhichWeapon = POWERUP1;
+		}
+		else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num9) && PermissionToWeapon[8])
+		{
+			WhichWeapon = POWERUP2;
+		}
+		else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num0) && PermissionToWeapon[9])
+		{
+			WhichWeapon = POWERUP3;
+		}
+
 
 		counter = 0;
 		for (iterEnem = enemyArray.begin(); iterEnem != enemyArray.end(); ++iterEnem)
@@ -212,23 +283,93 @@ void game::StatePLAY()
 			counter++;
 		}
 
-		//dodajemy pocisk
+		//dodajemy pocisk (Obs³uga Broni)
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space) && delayBetweenSpawningProjectiles.getElapsedTime()
-			>= currentFireSpeed  && Bullets[WhichWeapon] > 0 )
+			>= currentFireSpeed  && Bullets[WhichWeapon] > 0 && WhichWeapon < 7 )
 		{
 			Projectile.setupPosition( sf::Vector2f(Player.getShape().getPosition().x + (Player.getShape().getGlobalBounds().width /2),
 									Player.getShape().getPosition().y + (Player.getShape().getGlobalBounds().height/2) ));
-			Projectile.setupProjectile(WhichWeapon);
+			
+			if (Projectile.getID() != 4)
+			{
+				Projectile.setupProjectile(WhichWeapon);
+				if (upgradeBullets == true && !Projectile.isUpgraded())
+					Projectile.powerUp();
+				ProjectileArray.push_back(Projectile);
+			}
+			else
+			{
+				for (float i = -2; i < 3; i += 1.f)
+				{
+					Projectile.setupProjectile(WhichWeapon, i);
+					if (upgradeBullets == true )
+						Projectile.powerUp();
+					ProjectileArray.push_back(Projectile);
+				}
+			}
 
-			ProjectileArray.push_back(Projectile);
 			delayBetweenSpawningProjectiles.restart();
 			Bullets[WhichWeapon]--;
+
+			//currentFireSpeed = Projectile.getFirespeed();
+		}
+		//OBS£UGA POWERUPÓW
+		else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space) && delayBetweenSpawningProjectiles.getElapsedTime() >= currentFireSpeed
+			&& Bullets[WhichWeapon] > 0)
+		{
+			if (WhichWeapon == POWERUP1 && !upgradeBullets)
+			{
+				BulletsUpgradeTime.restart();
+				upgradeBullets = true;
+				Projectile.powerUp();
+				Bullets[WhichWeapon]--;
+			}
+			else if (WhichWeapon == POWERUP2 && !slowEnemies)
+			{
+				slowEnemies = true;
+				SlowEnemiesTime.restart();
+				Bullets[WhichWeapon]--;
+				counter = 0;
+				for (iterEnem = enemyArray.begin(); iterEnem != enemyArray.end(); ++iterEnem)
+				{
+					enemyArray[counter].slowEnemy();
+					counter++;
+				}
+			}
+			else if (WhichWeapon == POWERUP3 && !robotOnMap)
+			{
+				RobotTime.restart();
+
+			}
+
+		}
+		//Sprawdzanie czasu powerupów 
+
+		if (BulletsUpgradeTime.getElapsedTime() >= sf::seconds(20.f) && upgradeBullets)
+		{
+			upgradeBullets = false;
+			Projectile.endOfPowerUp();
+			currentFireSpeed = Projectile.getFirespeed();
+		}
+		if (SlowEnemiesTime.getElapsedTime() >= sf::seconds(20.f) && slowEnemies)
+		{
+			slowEnemies = false;
+
+			counter = 0; 
+			for (iterEnem = enemyArray.begin(); iterEnem != enemyArray.end(); ++iterEnem)
+			{
+				enemyArray[counter].accelerateEnemy();
+				counter++;
+			}
+			Enemy.accelerateEnemy();
 		}
 
 		// po jakimœ czasie dodajemy kolejnego przeciwnika 
 		if (EnemySpawnClock.getElapsedTime() >= DelayBetweenEnemies)
 		{
-			Enemy.setupEnemy(randomEnemy() );
+			Enemy.setupEnemy(randomEnemy());
+			if (slowEnemies)
+				Enemy.slowEnemy();
 			enemyArray.push_back(Enemy);
 			EnemySpawnClock.restart();
 		}
@@ -292,8 +433,14 @@ void game::StatePLAY()
 		}
 
 
-		if (DEBUG == 1)
-		std::cout << ProjectileArray.size() << " | "<<enemyArray.size()<<"\n";
+		if (DEBUG == 1 && ConsoleTime.getElapsedTime() >= sf::seconds(.01f))
+		{
+			system("cls");
+			std::cout <<"POWERUPS : "<< BulletsUpgradeTime.getElapsedTime().asSeconds() << "\n";
+			std::cout <<"DAMAGE AND FIRESPEED : "<< Projectile.getDamage()<<" | " << Projectile.getFirespeed().asSeconds() << "\n";
+			std::cout << ProjectileArray.size() << " | " << enemyArray.size() << "\n";
+			ConsoleTime.restart();
+		}
 		
 		//update i rysowanie przeciwników
 		counter = 0;
@@ -324,9 +471,13 @@ void game::StatePLAY()
 			StatusOfMachine = SHOP;
 		}
 
+		// HUD
 		std::stringstream stringStream;
 		if (typeOfWave != 1)
-		stringStream<<"  Fala : " << Wave <<"| Pozostalo : "<< numberOfEnemies << " | Broñ : " << WhichWeapon << " | Amunicja : " << Bullets[WhichWeapon] << " | Kasa : " << Cash;
+			stringStream << "Fala : " << Wave << "| Pozostalo : " << numberOfEnemies << " | Broñ : " << WhichWeapon << " | Amunicja : " << Bullets[WhichWeapon] << " | Kasa : " << Cash;
+		else
+			stringStream << "Fala : " << Wave << " | Czas : " <<timeWave.getElapsedTime().asSeconds() << " | Broñ : "<<WhichWeapon << " | Amunicja : " << Bullets[WhichWeapon] << " | Kasa : " << Cash;
+		
 		text.setString(stringStream.str());
 		window.draw(text);
 

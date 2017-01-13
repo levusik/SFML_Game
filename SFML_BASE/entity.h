@@ -10,7 +10,7 @@
 #define WINDOWWIDTH 1024
 #define WINDOWHEIGHT 768
 #define LINE ((WINDOWWIDTH)/(12))
-#define DEBUG 0
+#define DEBUG 1
 
 /*
 	TO DO LIST:

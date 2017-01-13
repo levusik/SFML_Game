@@ -131,6 +131,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="projectile.cpp" />
+    <ClCompile Include="robot.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="enemy.h" />
@@ -138,6 +139,7 @@
     <ClInclude Include="game.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="projectile.h" />
+    <ClInclude Include="robot.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
